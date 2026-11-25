@@ -19,11 +19,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.roomdemo.ui.theme.RoomDemoTheme
 import android.app.Application
+import android.widget.Button
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Button
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -31,6 +36,13 @@ import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.Alignment.Companion.CenterHorizontally
+
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -86,9 +98,94 @@ fun MainScreen(
     searchResults: List<Product>,
     viewModel: MainViewModel
 ) {
+
+    var productName by remember { mutableStateOf("") }
+    var productQuantity by remember { mutableStateOf("") }
+    var searching by remember { mutableStateOf(false) }
+    val onProductTextChange = { text : String ->
+        productName = text
+    }
+    val onQuantityTextChange = { text : String ->
+        productQuantity = text
+    }
+
+    Column(
+        horizontalAlignment = CenterHorizontally,
+        modifier = modifier
+            .fillMaxWidth()
+    ) {
+        CustomTextField(
+            title = "Product Name",
+            textState = productName,
+            onTextChange = onProductTextChange,
+            keyboardType = KeyboardType.Text
+        )
+        CustomTextField(
+            title = "Quantity",
+            textState = productQuantity,
+            onTextChange = onQuantityTextChange,
+            keyboardType = KeyboardType.Number
+        )
+        Row(
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(10.dp)
+        ) {
+            Button(onClick = {
+                if (productQuantity.isNotEmpty()) {
+                    viewModel.insertProduct(
+                        Product(
+                            productName,
+                            productQuantity.toInt()
+                        )
+                    )
+                    searching = false
+                }
+            }) {
+                Text("Add")
+            }
+
+            Button(onClick = {
+                searching = true
+                viewModel.findProduct(productName)
+            }) {
+                Text("Search")
+            }
+            Button(onClick = {
+                searching = false
+                viewModel.deleteProduct(productName)
+            }) {
+                Text("Delete")
+            }
+            Button(onClick = {
+                searching = false
+                productName = ""
+                productQuantity = ""
+            }) {
+                Text("Clear")
+            }
+            }
+
+
+            LazyColumn(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(10.dp)
+            ) {
+                val list = if (searching) searchResults else allProducts
+                item {
+                    TitleRow(head1 = "ID", head2 = "Product", head3 = "Quantity")
+                }
+                items(list) { product ->
+                    ProductRow(id = product.id, name = product.productName,
+                        quantity = product.quantity)
+            }
+        }
+    }
 }
 
-@Composable
+    @Composable
 fun TitleRow(head1: String, head2: String, head3: String) {
     Row(
         modifier = Modifier
